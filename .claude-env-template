@@ -1,0 +1,29 @@
+# ============ Labor-Recruit 项目环境变量模板 ============
+# 复制此文件为 .claude-env 并根据需要修改
+
+# ============ 项目基础信息 ============
+PROJECT_NAME="labor-recruit"
+PROJECT_DESC="蓝领招聘与项目运营系统"
+GITHUB_REPO="SwordImmortal/labor-recruit"
+
+# ============ 开发服务器 ============
+BACKEND_PORT=8000
+FRONTEND_PORT=5173
+API_BASE_URL=http://localhost:8000/api/v1
+
+# ============ 数据库配置 ============
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=labor_recruit
+DB_USER=root
+# DB_PASSWORD=请在实际 .env 中设置
+
+# ============ 项目路径 ============
+# Windows 路径示例
+PROJECT_ROOT=D:\coding\labor-recruit
+BACKEND_DIR=D:\coding\labor-recruit\backend
+FRONTEND_DIR=D:\coding\labor-recruit\frontend
+
+# ============ 记忆文件 ============
+PROJECT_MEMORY=D:\coding\labor-recruit\PROJECT_MEMORY.md
+GLOBAL_MEMORY=C:\Users\yzhq0\.copaw\MEMORY.md
