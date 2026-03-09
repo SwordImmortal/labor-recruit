@@ -123,6 +123,49 @@ async def update_candidate(
     return candidate
 
 
+@router.get("/{candidate_id}/follows")
+async def get_follow_records(
+    candidate_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """获取候选人跟进记录"""
+    from app.models.candidate import FollowRecord
+    from sqlalchemy.orm import selectinload
+    
+    result = await db.execute(select(Candidate).where(Candidate.id == candidate_id))
+    candidate = result.scalar_one_or_none()
+    if not candidate:
+        raise HTTPException(status_code=404, detail="候选人不存在")
+    
+    # 数据权限检查
+    if current_user.role == UserRole.RECRUITER and candidate.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="无权查看")
+    
+    # 获取跟进记录
+    query = select(FollowRecord).where(
+        FollowRecord.candidate_id == candidate_id
+    ).options(
+        selectinload(FollowRecord.operator)
+    ).order_by(FollowRecord.follow_at.desc())
+    
+    result = await db.execute(query)
+    records = result.scalars().all()
+    
+    # 转换为可序列化格式
+    return [
+        {
+            "id": r.id,
+            "status_from": r.status_from,
+            "status_to": r.status_to,
+            "content": r.content,
+            "follow_at": r.follow_at.strftime("%Y-%m-%d %H:%M") if r.follow_at else None,
+            "operator_name": r.operator.real_name or r.operator.username if r.operator else None
+        }
+        for r in records
+    ]
+
+
 @router.post("/{candidate_id}/follow")
 async def add_follow_record(
     candidate_id: int,
