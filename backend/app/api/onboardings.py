@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from typing import List, Optional
+from datetime import datetime
 
 from app.core.database import get_db
 from app.models.user import User, UserRole
-from app.models.onboarding import Onboarding, OnboardingStatus, Resignation
+from app.models.onboarding import Onboarding, OnboardingStatus, Resignation, ResignReason
+from app.models.candidate import Candidate, CandidateStatus
 from app.schemas.onboarding import OnboardingCreate, OnboardingUpdate, OnboardingResponse
 from app.api.auth import get_current_user
 
@@ -22,7 +25,10 @@ async def get_onboardings(
     db: AsyncSession = Depends(get_db)
 ):
     """获取入职列表"""
-    query = select(Onboarding)
+    query = select(Onboarding).options(
+        selectinload(Onboarding.candidate),
+        selectinload(Onboarding.project)
+    )
     
     if status:
         query = query.where(Onboarding.status == status)
@@ -45,7 +51,12 @@ async def get_onboarding(
     db: AsyncSession = Depends(get_db)
 ):
     """获取入职详情"""
-    result = await db.execute(select(Onboarding).where(Onboarding.id == onboarding_id))
+    query = select(Onboarding).options(
+        selectinload(Onboarding.candidate),
+        selectinload(Onboarding.project)
+    ).where(Onboarding.id == onboarding_id)
+    
+    result = await db.execute(query)
     onboarding = result.scalar_one_or_none()
     if not onboarding:
         raise HTTPException(status_code=404, detail="入职记录不存在")
@@ -59,11 +70,6 @@ async def create_onboarding(
     db: AsyncSession = Depends(get_db)
 ):
     """创建入职记录"""
-    if current_user.role == UserRole.RECRUITER:
-        raise HTTPException(status_code=403, detail="权限不足")
-    
-    from app.models.candidate import Candidate, CandidateStatus
-    
     # 检查候选人是否存在
     result = await db.execute(select(Candidate).where(Candidate.id == onboarding_data.candidate_id))
     candidate = result.scalar_one_or_none()
@@ -82,7 +88,14 @@ async def create_onboarding(
     
     await db.commit()
     await db.refresh(onboarding)
-    return onboarding
+    
+    # 重新加载关联
+    query = select(Onboarding).options(
+        selectinload(Onboarding.candidate),
+        selectinload(Onboarding.project)
+    ).where(Onboarding.id == onboarding.id)
+    result = await db.execute(query)
+    return result.scalar_one()
 
 
 @router.put("/{onboarding_id}", response_model=OnboardingResponse)
@@ -93,10 +106,12 @@ async def update_onboarding(
     db: AsyncSession = Depends(get_db)
 ):
     """更新入职记录"""
-    if current_user.role == UserRole.RECRUITER:
-        raise HTTPException(status_code=403, detail="权限不足")
+    query = select(Onboarding).options(
+        selectinload(Onboarding.candidate),
+        selectinload(Onboarding.project)
+    ).where(Onboarding.id == onboarding_id)
     
-    result = await db.execute(select(Onboarding).where(Onboarding.id == onboarding_id))
+    result = await db.execute(query)
     onboarding = result.scalar_one_or_none()
     if not onboarding:
         raise HTTPException(status_code=404, detail="入职记录不存在")
@@ -107,27 +122,32 @@ async def update_onboarding(
     
     await db.commit()
     await db.refresh(onboarding)
-    return onboarding
+    
+    # 重新加载关联
+    query = select(Onboarding).options(
+        selectinload(Onboarding.candidate),
+        selectinload(Onboarding.project)
+    ).where(Onboarding.id == onboarding.id)
+    result = await db.execute(query)
+    return result.scalar_one()
+
+
+class ResignRequest(BaseModel):
+    resign_date: str
+    reason: str
+    reason_detail: Optional[str] = None
+    need_replace: Optional[bool] = None
+    no_replace_reason: Optional[str] = None
 
 
 @router.post("/{onboarding_id}/resign")
 async def add_resignation(
     onboarding_id: int,
-    resign_date: str,
-    reason: str,
-    reason_detail: Optional[str] = None,
-    need_replace: Optional[bool] = None,
-    no_replace_reason: Optional[str] = None,
+    resign_data: ResignRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """添加离职记录"""
-    if current_user.role not in [UserRole.ADMIN, UserRole.SUPERVISOR]:
-        raise HTTPException(status_code=403, detail="权限不足")
-    
-    from datetime import datetime
-    from app.models.onboarding import ResignReason
-    
     result = await db.execute(select(Onboarding).where(Onboarding.id == onboarding_id))
     onboarding = result.scalar_one_or_none()
     if not onboarding:
@@ -136,11 +156,11 @@ async def add_resignation(
     # 创建离职记录
     resignation = Resignation(
         onboarding_id=onboarding_id,
-        resign_date=datetime.strptime(resign_date, "%Y-%m-%d").date(),
-        reason=reason,
-        reason_detail=reason_detail,
-        need_replace=need_replace,
-        no_replace_reason=no_replace_reason
+        resign_date=datetime.strptime(resign_data.resign_date, "%Y-%m-%d").date(),
+        reason=resign_data.reason,
+        reason_detail=resign_data.reason_detail,
+        need_replace=resign_data.need_replace,
+        no_replace_reason=resign_data.no_replace_reason
     )
     db.add(resignation)
     

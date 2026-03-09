@@ -4,6 +4,25 @@ from datetime import date, datetime
 from app.models.onboarding import OnboardingStatus
 
 
+class CandidateBrief(BaseModel):
+    """候选人简要信息"""
+    id: int
+    name: str
+    phone: str
+    
+    class Config:
+        from_attributes = True
+
+
+class ProjectBrief(BaseModel):
+    """项目简要信息"""
+    id: int
+    name: str
+    
+    class Config:
+        from_attributes = True
+
+
 class OnboardingBase(BaseModel):
     candidate_id: int
     project_id: int
@@ -33,6 +52,8 @@ class OnboardingResponse(OnboardingBase):
     id: int
     owner_id: int
     status: OnboardingStatus
+    candidate: Optional[CandidateBrief] = None
+    project: Optional[ProjectBrief] = None
     created_at: datetime
     updated_at: datetime
 

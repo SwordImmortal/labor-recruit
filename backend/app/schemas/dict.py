@@ -13,6 +13,12 @@ class DictTypeCreate(DictTypeBase):
     pass
 
 
+class DictTypeUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
 class DictTypeResponse(DictTypeBase):
     id: int
     is_active: bool
@@ -32,6 +38,14 @@ class DictItemBase(BaseModel):
 
 class DictItemCreate(DictItemBase):
     pass
+
+
+class DictItemUpdate(BaseModel):
+    code: Optional[str] = None
+    name: Optional[str] = None
+    sort_order: Optional[int] = None
+    is_default: Optional[bool] = None
+    is_active: Optional[bool] = None
 
 
 class DictItemResponse(DictItemBase):

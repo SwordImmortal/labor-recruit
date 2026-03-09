@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import init_db
-from app.api import auth, users, projects, candidates, onboardings, channels, dicts
+from app.api import auth, users, projects, candidates, onboardings, channels, dicts, dashboard
 
 
 @asynccontextmanager
@@ -44,6 +44,7 @@ app.include_router(candidates.router, prefix="/api/v1/candidates", tags=["候选
 app.include_router(onboardings.router, prefix="/api/v1/onboardings", tags=["入职"])
 app.include_router(channels.router, prefix="/api/v1/channels", tags=["渠道"])
 app.include_router(dicts.router, prefix="/api/v1/dicts", tags=["字典"])
+app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["工作台"])
 
 
 # 根路径
