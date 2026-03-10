@@ -65,6 +65,15 @@
             </a-form-item>
           </a-col>
           <a-col :span="12">
+            <a-form-item label="客户">
+              <a-select v-model:value="form.customer_id" placeholder="请选择客户" allow-clear>
+                <a-select-option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="16">
+          <a-col :span="12">
             <a-form-item label="业务类型" name="business_type">
               <a-select v-model:value="form.business_type" placeholder="请选择">
                 <a-select-option value="rpo">RPO（招聘流程外包）</a-select-option>
@@ -164,6 +173,7 @@ import request from '@/api/request'
 
 const loading = ref(false)
 const projects = ref<any[]>([])
+const customers = ref<any[]>([])
 const modalVisible = ref(false)
 const isEdit = ref(false)
 const submitting = ref(false)
@@ -191,6 +201,7 @@ const columns = [
 
 const form = reactive({
   name: '',
+  customer_id: undefined as number | undefined,
   business_type: 'rpo',
   city: '',
   target_count: 0,
@@ -215,6 +226,7 @@ const rules = {
 function resetForm() {
   Object.assign(form, {
     name: '',
+    customer_id: undefined,
     business_type: 'rpo',
     city: '',
     target_count: 0,
@@ -228,6 +240,15 @@ function resetForm() {
     need_buy_pack: false,
     description: ''
   })
+}
+
+async function fetchCustomers() {
+  try {
+    const res = await request.get('/customers/select/list')
+    customers.value = res
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 async function fetchProjects() {

@@ -21,6 +21,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '工作台', icon: 'HomeOutlined' }
       },
       {
+        path: 'leads',
+        name: 'Leads',
+        component: () => import('@/views/leads/Index.vue'),
+        meta: { title: '线索池', icon: 'UserAddOutlined' }
+      },
+      {
         path: 'candidates',
         name: 'Candidates',
         component: () => import('@/views/candidates/Index.vue'),
@@ -31,6 +37,18 @@ const routes: RouteRecordRaw[] = [
         name: 'CandidateDetail',
         component: () => import('@/views/candidates/Detail.vue'),
         meta: { title: '候选人详情', hidden: true }
+      },
+      {
+        path: 'talents',
+        name: 'Talents',
+        component: () => import('@/views/talents/Index.vue'),
+        meta: { title: '人才库', icon: 'StarOutlined' }
+      },
+      {
+        path: 'customers',
+        name: 'Customers',
+        component: () => import('@/views/customers/Index.vue'),
+        meta: { title: '客户管理', icon: 'BankOutlined' }
       },
       {
         path: 'projects',

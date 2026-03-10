@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from app.models.candidate import CandidateStatus
 
@@ -35,16 +35,20 @@ class CandidateUpdate(BaseModel):
     note: Optional[str] = None
     is_duplicate: Optional[bool] = None
     duplicate_reason: Optional[str] = None
+    in_talent_pool: Optional[bool] = None
+    tags: Optional[List[str]] = None
 
 
 class CandidateResponse(CandidateBase):
     id: int
-    owner_id: int
+    owner_id: Optional[int] = None
     status: CandidateStatus
     interview_time: Optional[datetime]
     interview_feedback: Optional[str]
     is_duplicate: bool
     duplicate_reason: Optional[str]
+    in_talent_pool: bool
+    tags: Optional[List[str]] = None
     last_follow_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime

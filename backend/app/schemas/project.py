@@ -6,6 +6,7 @@ from app.models.project import BusinessType, RecruitStatus, OperationStatus, Onb
 
 class ProjectBase(BaseModel):
     name: str
+    customer_id: Optional[int] = None
     business_type: BusinessType = BusinessType.RPO
     city: str
     target_count: int = 0
@@ -26,6 +27,7 @@ class ProjectCreate(ProjectBase):
 
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
+    customer_id: Optional[int] = None
     business_type: Optional[BusinessType] = None
     city: Optional[str] = None
     target_count: Optional[int] = None

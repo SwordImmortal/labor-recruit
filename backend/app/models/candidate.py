@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, Text, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -32,10 +32,14 @@ class Candidate(Base):
     
     # 归属关系
     inviter_id = Column(Integer, ForeignKey("users.id"), nullable=True, comment="邀约人ID")
-    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="跟进人ID")
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True, comment="跟进人ID，为空表示公海线索")
     
     # 状态
     status = Column(Enum(CandidateStatus), default=CandidateStatus.LEAD, nullable=False, comment="状态")
+    
+    # 人才库
+    in_talent_pool = Column(Boolean, default=False, comment="是否在人才库")
+    tags = Column(JSON, nullable=True, comment="标签列表")
     
     # 面试信息
     interview_time = Column(DateTime, nullable=True, comment="面试时间")

@@ -83,6 +83,9 @@ import {
   LogoutOutlined,
   HomeOutlined,
   UserOutlined,
+  UserAddOutlined,
+  StarOutlined,
+  BankOutlined,
   ProjectOutlined,
   SolutionOutlined,
   ApiOutlined,
@@ -108,7 +111,10 @@ const currentTitle = computed(() => {
 const menuItems = computed(() => {
   const items = [
     { key: '/dashboard', icon: () => h(HomeOutlined), label: '工作台' },
+    { key: '/leads', icon: () => h(UserAddOutlined), label: '线索池' },
     { key: '/candidates', icon: () => h(UserOutlined), label: '候选人管理' },
+    { key: '/talents', icon: () => h(StarOutlined), label: '人才库' },
+    { key: '/customers', icon: () => h(BankOutlined), label: '客户管理' },
     { key: '/projects', icon: () => h(ProjectOutlined), label: '项目管理' },
     { key: '/onboardings', icon: () => h(SolutionOutlined), label: '入职管理' },
     { key: '/channels', icon: () => h(ApiOutlined), label: '渠道管理' },
