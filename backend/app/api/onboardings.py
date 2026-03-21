@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from datetime import datetime
+from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.models.user import User, UserRole
@@ -11,6 +12,7 @@ from app.models.onboarding import Onboarding, OnboardingStatus, Resignation, Res
 from app.models.candidate import Candidate, CandidateStatus
 from app.schemas.onboarding import OnboardingCreate, OnboardingUpdate, OnboardingResponse
 from app.api.auth import get_current_user
+from app.services.permission import PermissionService
 
 router = APIRouter()
 
@@ -35,9 +37,10 @@ async def get_onboardings(
     if project_id:
         query = query.where(Onboarding.project_id == project_id)
     
-    # 数据权限
-    if current_user.role == UserRole.RECRUITER:
-        query = query.where(Onboarding.owner_id == current_user.id)
+    # 数据权限 - 使用权限服务
+    permission_service = PermissionService(db)
+    accessible_user_ids = await permission_service.get_accessible_user_ids(current_user)
+    query = query.where(Onboarding.owner_id.in_(accessible_user_ids))
     
     query = query.offset(skip).limit(limit).order_by(Onboarding.created_at.desc())
     result = await db.execute(query)
@@ -51,15 +54,24 @@ async def get_onboarding(
     db: AsyncSession = Depends(get_db)
 ):
     """获取入职详情"""
+    # 数据权限检查
+    permission_service = PermissionService(db)
+    accessible_user_ids = await permission_service.get_accessible_user_ids(current_user)
+
     query = select(Onboarding).options(
         selectinload(Onboarding.candidate),
         selectinload(Onboarding.project)
     ).where(Onboarding.id == onboarding_id)
-    
+
     result = await db.execute(query)
     onboarding = result.scalar_one_or_none()
     if not onboarding:
         raise HTTPException(status_code=404, detail="入职记录不存在")
+
+    # 检查权限
+    if onboarding.owner_id not in accessible_user_ids:
+        raise HTTPException(status_code=403, detail="无权限访问该记录")
+
     return onboarding
 
 
@@ -106,23 +118,31 @@ async def update_onboarding(
     db: AsyncSession = Depends(get_db)
 ):
     """更新入职记录"""
+    # 数据权限检查
+    permission_service = PermissionService(db)
+    accessible_user_ids = await permission_service.get_accessible_user_ids(current_user)
+
     query = select(Onboarding).options(
         selectinload(Onboarding.candidate),
         selectinload(Onboarding.project)
     ).where(Onboarding.id == onboarding_id)
-    
+
     result = await db.execute(query)
     onboarding = result.scalar_one_or_none()
     if not onboarding:
         raise HTTPException(status_code=404, detail="入职记录不存在")
-    
+
+    # 检查权限
+    if onboarding.owner_id not in accessible_user_ids:
+        raise HTTPException(status_code=403, detail="无权限修改该记录")
+
     update_data = onboarding_data.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(onboarding, field, value)
-    
+
     await db.commit()
     await db.refresh(onboarding)
-    
+
     # 重新加载关联
     query = select(Onboarding).options(
         selectinload(Onboarding.candidate),
