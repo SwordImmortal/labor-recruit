@@ -8,6 +8,7 @@ from app.models.user import User, UserRole
 from app.models.project import Project, RecruitStatus, OperationStatus
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
 from app.api.auth import get_current_user
+from app.services.permission import PermissionService
 
 router = APIRouter()
 
@@ -23,12 +24,17 @@ async def get_projects(
 ):
     """获取项目列表"""
     query = select(Project)
-    
+
+    # 数据权限 - 使用权限服务
+    permission_service = PermissionService(db)
+    accessible_user_ids = await permission_service.get_accessible_user_ids(current_user)
+    query = query.where(Project.owner_id.in_(accessible_user_ids))
+
     if recruit_status:
         query = query.where(Project.recruit_status == recruit_status)
     if is_active is not None:
         query = query.where(Project.is_active == is_active)
-    
+
     query = query.offset(skip).limit(limit).order_by(Project.created_at.desc())
     result = await db.execute(query)
     return result.scalars().all()
@@ -45,6 +51,13 @@ async def get_project(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
+
+    # 数据权限检查
+    permission_service = PermissionService(db)
+    accessible_user_ids = await permission_service.get_accessible_user_ids(current_user)
+    if project.owner_id and project.owner_id not in accessible_user_ids:
+        raise HTTPException(status_code=403, detail="无权查看")
+
     return project
 
 
@@ -77,7 +90,13 @@ async def update_project(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
-    
+
+    # 权限检查
+    permission_service = PermissionService(db)
+    accessible_user_ids = await permission_service.get_accessible_user_ids(current_user)
+    if project.owner_id and project.owner_id not in accessible_user_ids:
+        raise HTTPException(status_code=403, detail="无权修改")
+
     update_data = project_data.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(project, field, value)
