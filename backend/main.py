@@ -10,11 +10,11 @@ from app.api import auth, users, customers, projects, candidates, onboardings, c
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
-    print("🚀 正在启动应用...")
+    print("Starting application...")
     await init_db()
-    print("✅ 数据库初始化完成")
+    print("Database initialized")
     yield
-    print("👋 应用关闭中...")
+    print("Application shutting down...")
 
 
 # 创建 FastAPI 应用

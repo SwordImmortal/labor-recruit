@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -24,12 +24,15 @@ class User(Base):
     real_name = Column(String(50), nullable=True, comment="真实姓名")
     role = Column(Enum(UserRole), default=UserRole.RECRUITER, nullable=False, comment="角色")
     is_active = Column(Boolean, default=True, comment="是否启用")
+    parent_id = Column(Integer, ForeignKey('users.id'), nullable=True, comment="上级用户ID（主管管理专员）")
     created_at = Column(DateTime, server_default=func.now(), comment="创建时间")
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), comment="更新时间")
 
     # 关系
     candidates = relationship("Candidate", back_populates="owner", foreign_keys="Candidate.owner_id")
     onboardings = relationship("Onboarding", back_populates="owner")
+    # 上级用户
+    parent = relationship("User", remote_side=[id], backref="subordinates")
 
     def __repr__(self):
         return f"<User {self.username}>"
