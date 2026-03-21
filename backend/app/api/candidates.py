@@ -9,6 +9,7 @@ from app.models.user import User, UserRole
 from app.models.candidate import Candidate, CandidateStatus, FollowRecord
 from app.schemas.candidate import CandidateCreate, CandidateUpdate, CandidateResponse
 from app.api.auth import get_current_user
+from app.services.permission import PermissionService
 
 router = APIRouter()
 
@@ -372,10 +373,11 @@ async def get_candidates(
 ):
     """获取候选人列表"""
     query = select(Candidate)
-    
-    # 数据权限
-    if current_user.role == UserRole.RECRUITER:
-        query = query.where(Candidate.owner_id == current_user.id)
+
+    # 数据权限 - 使用权限服务
+    permission_service = PermissionService(db)
+    accessible_user_ids = await permission_service.get_accessible_user_ids(current_user)
+    query = query.where(Candidate.owner_id.in_(accessible_user_ids))
     
     # 筛选条件
     if status:
@@ -407,11 +409,13 @@ async def get_candidate(
     candidate = result.scalar_one_or_none()
     if not candidate:
         raise HTTPException(status_code=404, detail="候选人不存在")
-    
+
     # 数据权限检查
-    if current_user.role == UserRole.RECRUITER and candidate.owner_id != current_user.id:
+    permission_service = PermissionService(db)
+    accessible_user_ids = await permission_service.get_accessible_user_ids(current_user)
+    if candidate.owner_id and candidate.owner_id not in accessible_user_ids:
         raise HTTPException(status_code=403, detail="无权查看")
-    
+
     return candidate
 
 
@@ -457,9 +461,11 @@ async def update_candidate(
     candidate = result.scalar_one_or_none()
     if not candidate:
         raise HTTPException(status_code=404, detail="候选人不存在")
-    
+
     # 权限检查
-    if current_user.role == UserRole.RECRUITER and candidate.owner_id != current_user.id:
+    permission_service = PermissionService(db)
+    accessible_user_ids = await permission_service.get_accessible_user_ids(current_user)
+    if candidate.owner_id and candidate.owner_id not in accessible_user_ids:
         raise HTTPException(status_code=403, detail="无权修改")
     
     update_data = candidate_data.dict(exclude_unset=True)
@@ -484,11 +490,13 @@ async def get_follow_records(
     candidate = result.scalar_one_or_none()
     if not candidate:
         raise HTTPException(status_code=404, detail="候选人不存在")
-    
+
     # 数据权限检查
-    if current_user.role == UserRole.RECRUITER and candidate.owner_id != current_user.id:
+    permission_service = PermissionService(db)
+    accessible_user_ids = await permission_service.get_accessible_user_ids(current_user)
+    if candidate.owner_id and candidate.owner_id not in accessible_user_ids:
         raise HTTPException(status_code=403, detail="无权查看")
-    
+
     # 获取跟进记录
     query = select(FollowRecord).where(
         FollowRecord.candidate_id == candidate_id
