@@ -93,6 +93,7 @@ import {
   BookOutlined
 } from '@ant-design/icons-vue'
 import { useUserStore } from '@/stores/user'
+import { menuPermission } from '@/config/menu-permission'
 
 const router = useRouter()
 const route = useRoute()
@@ -109,28 +110,24 @@ const currentTitle = computed(() => {
 
 // 菜单项
 const menuItems = computed(() => {
-  const items = [
-    { key: '/dashboard', icon: () => h(HomeOutlined), label: '工作台' },
-    { key: '/leads', icon: () => h(UserAddOutlined), label: '线索池' },
-    { key: '/candidates', icon: () => h(UserOutlined), label: '候选人管理' },
-    { key: '/talents', icon: () => h(StarOutlined), label: '人才库' },
-    { key: '/customers', icon: () => h(BankOutlined), label: '客户管理' },
-    { key: '/projects', icon: () => h(ProjectOutlined), label: '项目管理' },
-    { key: '/onboardings', icon: () => h(SolutionOutlined), label: '入职管理' },
-    { key: '/channels', icon: () => h(ApiOutlined), label: '渠道管理' },
+  const role = userStore.userInfo?.role || 'recruiter'
+  const allowedMenus = menuPermission[role] || menuPermission.recruiter || []
+
+  const allItems = [
+    { key: '/dashboard', icon: () => h(HomeOutlined), label: '工作台', name: 'dashboard' },
+    { key: '/leads', icon: () => h(UserAddOutlined), label: '线索池', name: 'leads' },
+    { key: '/candidates', icon: () => h(UserOutlined), label: '候选人管理', name: 'candidates' },
+    { key: '/talents', icon: () => h(StarOutlined), label: '人才库', name: 'talents' },
+    { key: '/customers', icon: () => h(BankOutlined), label: '客户管理', name: 'customers' },
+    { key: '/projects', icon: () => h(ProjectOutlined), label: '项目管理', name: 'projects' },
+    { key: '/onboardings', icon: () => h(SolutionOutlined), label: '入职管理', name: 'onboardings' },
+    { key: '/channels', icon: () => h(ApiOutlined), label: '渠道管理', name: 'channels' },
+    { key: '/users', icon: () => h(TeamOutlined), label: '用户管理', name: 'users' },
+    { key: '/dicts', icon: () => h(BookOutlined), label: '字典管理', name: 'dicts' },
   ]
-  
-  // 管理员/主管可见
-  if (userStore.isAdmin || userStore.isSupervisor) {
-    items.push({ key: '/users', icon: () => h(TeamOutlined), label: '用户管理' })
-  }
-  
-  // 管理员可见
-  if (userStore.isAdmin) {
-    items.push({ key: '/dicts', icon: () => h(BookOutlined), label: '字典管理' })
-  }
-  
-  return items
+
+  // 根据角色过滤菜单
+  return allItems.filter(item => allowedMenus.includes(item.name))
 })
 
 function handleMenuClick({ key }: { key: string }) {
